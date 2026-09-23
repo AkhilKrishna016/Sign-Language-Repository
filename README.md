@@ -1,141 +1,145 @@
-# EchoSign — Bidirectional Sign-Language Communication Assistant
+# Sign Language & Neural Gesture Intelligence Repository
 
-> **End-to-end AI assistant bridging Deaf/Mute signers and Hearing conversation partners using hand gesture recognition (ASL), natural language understanding, live captions, and speech synthesis.**
+[![GitHub](https://img.shields.io/badge/GitHub-Sign--Language--Repository-181717.svg?style=flat&logo=github)](https://github.com/AkhilKrishna016/Sign-Language-Repository)
+[![Python](https://img.shields.io/badge/Python-3.9%20%7C%203.10%20%7C%203.11-3776AB.svg?style=flat&logo=python)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg?style=flat&logo=FastAPI)](https://fastapi.tiangolo.com)
+[![MediaPipe](https://img.shields.io/badge/MediaPipe-Solutions-007ACC.svg?style=flat)](https://developers.google.com/mediapipe)
+[![TensorFlow Lite](https://img.shields.io/badge/TFLite-MobileNet-FF6F00.svg?style=flat&logo=TensorFlow)](https://www.tensorflow.org/lite)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-EE4C2C.svg?style=flat&logo=PyTorch)](https://pytorch.org)
 
-EchoSign recognizes both **full ASL signs (word-level glosses)** and **fingerspelled letters (the alphabet)** using MediaPipe 3D hand landmark extraction, reconstructs natural conversational English meaning using a dedicated language-understanding layer, holds a conversation, and closes the loop back with audio speech and visual ASL feedback.
+A comprehensive monorepo consolidating two complete, production-ready sign language communication and neural gesture intelligence projects.
 
 ---
 
-## 🌟 Key Architecture & Build Order
+## Repository Projects
 
-```mermaid
-graph TD
-    subgraph 1. Hand Tracking (MediaPipe Hands)
-        Cam[Webcam Video Stream] --> Tracker[Modular HandTracker]
-        Tracker --> Landmarks[21 3D Landmarks per hand - up to 2 hands]
-    end
+This repository hosts two distinct, standalone systems:
 
-    subgraph 2. Dual Classifiers (Landmark Coordinates Only - No Raw Pixels)
-        Landmarks --> FS[Fingerspelling Classifier: MLP/RF on Landmarks]
-        Landmarks --> Buffer[Rolling Window: 15-30 frames]
-        Buffer --> WordClf[Word-Level Temporal Sign Classifier]
-    end
-
-    subgraph 3. Turn Segmentation & Utterance Buffering
-        FS & WordClf --> Segmenter[Turn Segmenter: Hand at Rest Pause Detection]
-        Segmenter -->|Structured Turn String| StructuredMsg[GLOSS confidence + [FS] A(0.9)-B(0.8)]
-    end
-
-    subgraph 4. Dialogue Layer & Feedback Loop
-        StructuredMsg --> LangEngine[Dialogue Layer: sign-language-assistant-system-prompt.md]
-        LangEngine --> Grammar[ASL Grammar Inversion + M/N, U/V Silent Correction]
-        LangEngine --> FeedbackLog[Feedback Logger: logs/low_confidence_feedback.jsonl]
-    end
-
-    subgraph 5. Output & User Interfaces
-        Grammar --> Captions[Live High-Contrast Subtitles]
-        Grammar --> TTS[Text-to-Speech Voice Engine]
-        Captions & TTS --> UI[FastAPI Web Interface / Streamlit App]
-    end
+```text
+Sign-Language-Repository/
+│
+├── 📂 EchoSign-Bidirectional-Communication/
+│   └── Real-time bidirectional communication bridge between mute and deaf individuals
+│       (PyTorch MobileNetV2 + MLP, MediaPipe Landmarker, FastAPI, WebSockets, STT/TTS, Streamlit)
+│
+└── 📂 OmniSign-Object-Gesture-Detection/
+    └── Real-time neural sign gesture and custom object detection engine
+        (TFLite MobileNet SSD, MediaPipe Hands, TFLite Classifier, FastAPI Server, Modern Dark Web UI, Android Java App)
 ```
 
 ---
 
-## 📦 Deliverables & Features
+## Project 1: EchoSign &mdash; Bidirectional Communication System
 
-### 1. Dedicated System Prompt Asset
-- [`sign-language-assistant-system-prompt.md`](./sign-language-assistant-system-prompt.md): The official language-understanding prompt covering gloss parsing, topic-first ASL grammar, silent correction for visual confusion pairs ($M/N$, $U/V$, $K/P$, $A/S/T$), and 3-tier uncertainty gating ($\ge 0.75$ reliable, $0.4\text{–}0.75$ clarify, $< 0.4$ repeat).
+> **Directory**: [`EchoSign-Bidirectional-Communication/`](./EchoSign-Bidirectional-Communication/)  
+> **Documentation**: [EchoSign README](./EchoSign-Bidirectional-Communication/README.md)
 
-### 2. Preprocessing Scripts (`scripts/`)
-- [`scripts/preprocess_landmarks.py`](./scripts/preprocess_landmarks.py): Extracts 21 3D landmarks per hand from image datasets (ASL Alphabet / Sign Language MNIST) and saves normalized coordinate arrays to `data/asl_landmarks.npz` (never trains directly on raw pixels).
-- [`scripts/preprocess_wlasl.py`](./scripts/preprocess_wlasl.py): Extracts rolling temporal landmark sequences from WLASL videos and saves to `data/wlasl_sequences.npz`.
+### Highlights:
+- **Deaf $\to$ Mute (Sign to Voice/Text)**:
+  - High-precision dual-pipeline computer vision engine:
+    - **Fingerspelling (A–Z, 0–9)**: 63-dim normalized hand landmark MLP classifier (99.8% test accuracy) + 224x224 RGB MobileNetV2 feature extractor.
+    - **Word-Level Gestures**: Landmark trajectory temporal feature classification.
+  - Natural audio synthesis using `gTTS` and `pyttsx3` with caching.
+- **Mute $\to$ Deaf (Speech/Text to Animated Sign Visuals)**:
+  - Real-time speech transcription (Google Speech Recognition / Web Speech API).
+  - NLP lemmatization, word tokenization, and fingerspelling fallback.
+  - Interactive avatar rendering sign videos, animated GIFs, and fingerspelling sequences.
+- **Frontend Interfaces**:
+  - Interactive **Streamlit Dashboard** (`streamlit_app.py`).
+  - Ultra-low-latency **FastAPI WebSocket Web Interface** (`frontend/`).
 
-### 3. Dual Classifier Training (`scripts/`)
-- [`scripts/train_fingerspelling.py`](./scripts/train_fingerspelling.py): Trains lightweight MLP (**98.41% acc**) and Random Forest (**97.62% acc**) models on landmark coordinates, saved to `backend/models/`.
-- [`scripts/train_word_level.py`](./scripts/train_word_level.py): Trains temporal sequence classifier over rolling landmark windows for dynamic ASL glosses (`HELLO`, `THANK-YOU`, `HELP`, `WHERE`, etc.), saved to `backend/models/word_level_model.pkl`.
-
-### 4. Modular Pipeline (`backend/`)
-- `HandTracker`: MediaPipe Tasks HandLandmarker extracting 21 3D points for up to 2 hands.
-- `FingerspellingClassifier`: Alphabet classifier with per-letter confidence scoring.
-- `WordLevelClassifier`: Temporal trajectory classifier over a 20-frame rolling window.
-- `TurnSegmenter`: "Hand at rest" pause detection emitting structured strings.
-- `FeedbackLogger`: Structured logging to `logs/low_confidence_feedback.jsonl` for continuous retraining.
-- `SpeechToSignEngine`: Reverse channel translating English to ASL Gloss and visual cards.
-- `TTSEngine`: Voice audio generation via gTTS and offline pyttsx3.
-
----
-
-## 🚀 Quick Start
-
-### 1. Launch Production FastAPI Web Interface
+### Quick Start:
 ```bash
+cd EchoSign-Bidirectional-Communication
+pip install -r requirements.txt
 python run.py
 ```
-Open **[http://localhost:8000](http://localhost:8000)**.
 
-### 2. Launch Streamlit Alternative Demo
+---
+
+## Project 2: OmniSign &mdash; Neural Object & Gesture Detection
+
+> **Directory**: [`OmniSign-Object-Gesture-Detection/`](./OmniSign-Object-Gesture-Detection/)  
+> **Documentation**: [OmniSign README](./OmniSign-Object-Gesture-Detection/README.md)
+
+### Highlights:
+- **Dual-Stage Hybrid Neural Pipeline**:
+  - **MediaPipe Hands**: Real-time 21 3D hand keypoints localization with confidence filtering.
+  - **SSD MobileNet TFLite**: Multi-class object localization for bounding boxes and labels.
+  - **TFLite Hand Gesture Classifier**: Fast edge inference classifying signs (`LikeYou`, `ThankYou`, `Yes`).
+- **High-Performance FastAPI Server**:
+  - Simultaneous support for HTTP multipart frame uploads (`/detect`) and full-duplex WebSocket live streams (`/ws/detect`).
+  - Non-blocking asynchronous processing yielding 30+ FPS.
+- **Futuristic Glassmorphism Web Interface**:
+  - Live canvas rendering with dynamic bounding boxes, skeleton wireframes, and confidence telemetry HUD.
+  - Tunable detection sensitivity, smoothing window, and label filtering.
+- **Multi-Platform Source**:
+  - Native Android Java application (`CustomObjectDetectionLiveFeedJava-main`).
+  - Google Colab / Jupyter model training notebook (`Object_Detection.ipynb`) and Roboflow Pascal VOC datasets.
+  - Academic course deliverables, presentations (`.pptx`), and project documentation (`OPPS/`).
+
+### Quick Start:
 ```bash
-streamlit run streamlit_app.py
-```
-
-### 3. Run Automated Test Suite (23/23 tests passed)
-```bash
-python -m unittest discover tests
-```
-
-### 4. Preprocess Datasets & Retrain Models
-```bash
-# Step 1: Preprocess images and video sequences to landmarks
-python scripts/preprocess_landmarks.py
-python scripts/preprocess_wlasl.py
-
-# Step 2: Train classifiers on landmarks
-python scripts/train_fingerspelling.py
-python scripts/train_word_level.py
+cd OmniSign-Object-Gesture-Detection
+pip install -r requirements.txt
+python run_server.py
 ```
 
 ---
 
-## ⚠️ Known Limitations & Out-of-Scope (v1)
+## Technology Stack Matrix
 
-1. **Static vs. Motion Letters ($J$ and $Z$)**:
-   - Letters $J$ and $Z$ involve hand motion trajectories. In single static frames, they may produce visual ambiguity; the dialogue layer is specifically designed to ask for a repeat if repeated garbling occurs on these letters.
-2. **Lighting & Background Sensitivity**:
-   - Because all classification operates strictly on 3D landmark coordinates (rather than raw pixel CNNs), background variations are naturally filtered. However, severe low-light or extreme glare can impact landmark detector confidence.
-3. **Sign-Avatar / Text-to-Sign Avatar Synthesis**:
-   - Rendering photorealistic 3D signing avatars from text is a separate, harder research frontier and is explicitly flagged as out-of-scope for v1. EchoSign provides live captions, speech audio, and visual ASL flashcard cues.
-4. **Language Specificity**:
-   - The vocabulary, grammar inversion rules, and datasets are tailored specifically for **American Sign Language (ASL)**. Other sign languages (BSL, ISL, Auslan) use different manual alphabets and grammatical structures.
+| Technology | EchoSign | OmniSign |
+| :--- | :---: | :---: |
+| **FastAPI + Uvicorn** | :white_check_mark: | :white_check_mark: |
+| **Full-Duplex WebSockets** | :white_check_mark: | :white_check_mark: |
+| **MediaPipe Hands** | :white_check_mark: | :white_check_mark: |
+| **TensorFlow Lite (TFLite)** | &mdash; | :white_check_mark: |
+| **PyTorch (MobileNetV2)** | :white_check_mark: | &mdash; |
+| **Speech Recognition & TTS** | :white_check_mark: | &mdash; |
+| **Streamlit Interface** | :white_check_mark: | &mdash; |
+| **Modern Dark-Mode Web UI** | :white_check_mark: | :white_check_mark: |
+| **Native Android Java Client** | &mdash; | :white_check_mark: |
+| **Model Training Pipelines** | :white_check_mark: | :white_check_mark: |
 
 ---
 
-## 📂 Project Structure
+## Repository Structure Overview
 
+```text
+.
+├── README.md                                    # This master overview
+├── .gitignore                                   # Global repository exclusion rules
+│
+├── EchoSign-Bidirectional-Communication/        # Project 1: Bidirectional System
+│   ├── backend/                                 # CV, NLP, TTS, STT, and FastAPI routers
+│   ├── data/                                    # Landmark feature datasets
+│   ├── dataset/                                 # Character and gesture image assets
+│   ├── frontend/                                # Modern dark-mode web client
+│   ├── logs/                                    # System telemetry & feedback logs
+│   ├── scripts/                                 # Data collection & model training utilities
+│   ├── tests/                                   # Unit and integration test suite
+│   ├── requirements.txt                         # EchoSign dependencies
+│   ├── run.py                                   # EchoSign unified launcher
+│   ├── streamlit_app.py                         # Streamlit UI
+│   └── README.md                                # EchoSign complete documentation
+│
+└── OmniSign-Object-Gesture-Detection/           # Project 2: OmniSign Live System
+    ├── server.py                                # FastAPI + TFLite inference server
+    ├── run_server.py                            # OmniSign runner with browser auto-open
+    ├── requirements.txt                         # OmniSign dependencies
+    ├── web/                                     # Glassmorphism HTML5/CSS3/ES6 Web UI
+    ├── OOP cp/                                  # TFLite models, Android Java project, VOC datasets
+    │   ├── model.tflite
+    │   ├── converted_tflite (4)/
+    │   ├── ModelTrainingCodeFile/
+    │   └── CustomObjectDetectionLiveFeedJava-main/
+    ├── OPPS/                                    # Presentations (.pptx), reports & synopsis
+    └── README.md                                # OmniSign complete documentation
 ```
-├── backend/
-│   ├── classifiers/
-│   │   ├── fingerspelling_classifier.py  # Single-frame landmark alphabet classifier
-│   │   └── word_level_classifier.py      # Rolling-window temporal sign classifier
-│   ├── hand_tracker.py                   # Modular MediaPipe 3D hand tracker
-│   ├── turn_segmentation.py              # Hand-at-rest pause detector
-│   ├── language_engine.py                # Prompt-compliant dialogue layer
-│   ├── speech_to_sign.py                 # Reverse English -> ASL Gloss translator
-│   ├── tts_engine.py                     # Text-to-Speech audio synthesizer
-│   ├── feedback_logger.py                # Low-confidence feedback loop recorder
-│   ├── main.py                           # FastAPI REST & WebSocket server
-│   └── models/                           # Trained model weights & task assets
-├── data/                                 # Preprocessed landmark NPZ arrays
-├── dataset/                              # ASL Alphabet training & test dataset
-├── frontend/                             # Modern dark-mode web application
-├── logs/                                 # low_confidence_feedback.jsonl
-├── scripts/
-│   ├── preprocess_landmarks.py           # Images -> 3D landmarks
-│   ├── preprocess_wlasl.py               # Videos -> Temporal sequences
-│   ├── train_fingerspelling.py           # Train MLP & Random Forest
-│   └── train_word_level.py               # Train temporal sequence model
-├── tests/                                # Comprehensive test suite (23 tests)
-├── sign-language-assistant-system-prompt.md # System prompt asset
-├── streamlit_app.py                      # Streamlit application
-├── run.py                                # One-click runner
-└── README.md                             # Documentation
-```
+
+---
+
+## License
+
+This repository is maintained for academic research, assistive technology, and machine learning development.

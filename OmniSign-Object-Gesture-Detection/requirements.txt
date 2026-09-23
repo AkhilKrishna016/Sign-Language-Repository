@@ -1,0 +1,18 @@
+# OmniSign - Real-Time Neural Object & Sign Gesture Detection Dependencies
+
+# Core Server & Web
+fastapi>=0.100.0
+uvicorn[standard]>=0.22.0
+websockets>=11.0.3
+python-multipart>=0.0.6
+pydantic>=2.0.0
+
+# Computer Vision & Image Processing
+opencv-python>=4.8.0
+numpy>=1.23.0,<2.0.0
+Pillow>=9.5.0
+mediapipe>=0.10.0
+
+# TFLite Inference Runtime
+# Note: Install ai-edge-litert or tflite-runtime or tensorflow
+ai-edge-litert>=1.0.0
