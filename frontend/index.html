@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EchoSign — Real-Time Bidirectional ASL Communication System</title>
+  <meta name="description" content="AI Language Understanding layer & real-time bidirectional sign language communication assistant connecting deaf, mute, and hearing conversation partners." />
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <!-- Background Glow FX -->
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+
+  <div class="app-container">
+    <!-- Header / Nav -->
+    <header class="app-header">
+      <div class="brand-group">
+        <div class="brand-icon">
+          <i data-lucide="hand-metal"></i>
+        </div>
+        <div>
+          <h1 class="brand-title">EchoSign <span>AI</span></h1>
+          <p class="brand-subtitle">Character-by-Character ASL Sentence Composer & Communication Assistant</p>
+        </div>
+      </div>
+
+      <nav class="nav-tabs">
+        <button class="nav-tab active" data-tab="studio-tab" id="tab-studio-btn">
+          <i data-lucide="message-square"></i> Communication Studio
+        </button>
+        <button class="nav-tab" data-tab="prompt-lab-tab" id="tab-prompt-lab-btn">
+          <i data-lucide="flask-conical"></i> Prompt Lab & Test Inputs
+        </button>
+        <button class="nav-tab" data-tab="dataset-tab" id="tab-dataset-btn">
+          <i data-lucide="layout-grid"></i> ASL Alphabet Explorer
+        </button>
+        <button class="nav-tab" data-tab="feedback-tab" id="tab-feedback-btn">
+          <i data-lucide="clipboard-list"></i> Feedback Logs
+        </button>
+      </nav>
+
+      <div class="system-status-pills">
+        <span class="status-pill status-online" id="server-status">
+          <span class="status-dot"></span> Server Ready
+        </span>
+        <span class="status-pill status-online" id="cv-status">
+          <span class="status-dot"></span> 3D Hand Tracker Active
+        </span>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="main-content">
+      
+      <!-- TAB 1: DUAL-CHANNEL COMMUNICATION STUDIO -->
+      <section class="tab-pane active" id="studio-tab">
+        <div class="split-studio-grid">
+          
+          <!-- LEFT: SIGNER CHANNEL (DEAF / MUTE USER) -->
+          <div class="studio-card signer-card">
+            <div class="card-header">
+              <div class="header-left">
+                <span class="channel-badge signer-badge">
+                  <i data-lucide="video"></i> Signer Channel (Deaf / Mute)
+                </span>
+                <span class="sub-label">Character-by-Character Sign Recognizer</span>
+              </div>
+              <div class="camera-controls">
+                <button class="btn btn-primary btn-sm" id="btn-toggle-cam">
+                  <i data-lucide="camera"></i> <span>Start Camera</span>
+                </button>
+                <button class="btn btn-secondary btn-sm" id="btn-mirror-cam" title="Mirror Camera">
+                  <i data-lucide="flip-horizontal"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Video & Skeleton Viewport -->
+            <div class="viewport-wrapper">
+              <video id="webcam-feed" autoplay playsinline muted></video>
+              <canvas id="skeleton-canvas"></canvas>
+              
+              <!-- Video Overlay HUD -->
+              <div class="video-hud">
+                <div class="hud-top">
+                  <div class="live-badge" id="live-indicator">
+                    <span class="live-dot"></span> LIVE 3D TRACKING
+                  </div>
+                  <div class="hand-detected-badge" id="hud-hand-badge">
+                    <i data-lucide="hand"></i> Hand: Detecting...
+                  </div>
+                </div>
+
+                <div class="hud-bottom">
+                  <div class="recognized-symbol-box">
+                    <span class="symbol-label">Detected Character</span>
+                    <div class="symbol-display">
+                      <span class="current-symbol" id="hud-symbol">—</span>
+                      <span class="current-confidence" id="hud-confidence">0.00</span>
+                    </div>
+                  </div>
+                  
+                  <div class="hud-hold-meter">
+                    <div class="hold-label">
+                      <span>Hold to Add Letter</span>
+                      <span id="hud-hold-pct">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                      <div class="progress-fill" id="hud-hold-fill"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Camera Offline Placeholder -->
+              <div class="camera-offline-overlay" id="cam-offline-overlay">
+                <i data-lucide="camera-off" class="offline-icon"></i>
+                <h3>Webcam Feed Inactive</h3>
+                <p>Click "Start Camera" to sign characters. Hold each hand shape to add letters, form words, build your sentence, and send to the assistant.</p>
+                <button class="btn btn-accent" id="btn-start-cam-hero">
+                  <i data-lucide="power"></i> Activate Camera
+                </button>
+              </div>
+            </div>
+
+            <!-- Character-by-Character Sentence Composer -->
+            <div class="sentence-composer-container">
+              <div class="composer-header">
+                <div class="composer-title-group">
+                  <span class="composer-title">
+                    <i data-lucide="pen-tool"></i> Composed Sentence Builder
+                  </span>
+                  <span class="composer-hint">Sign characters ➔ Build sentence ➔ Send to assistant</span>
+                </div>
+                <div class="auto-add-toggle-group">
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="auto-add-toggle" checked />
+                    <span class="slider"></span>
+                  </label>
+                  <span class="toggle-label">Auto-add on hold (0.8s)</span>
+                </div>
+              </div>
+
+              <!-- Live Composed Sentence Box -->
+              <div class="composed-sentence-box" id="composed-sentence-box">
+                <div class="sentence-text-preview" id="sentence-text-preview">
+                  <span class="empty-sentence-placeholder">Sign letters to begin spelling words...</span>
+                  <span class="blinking-cursor">|</span>
+                </div>
+                <div class="sentence-tokens-stream" id="sentence-tokens-stream"></div>
+              </div>
+
+              <!-- Composer Action Controls -->
+              <div class="composer-controls-row">
+                <div class="quick-edit-actions">
+                  <button class="btn btn-secondary btn-sm" id="btn-add-char" title="Append currently detected character">
+                    <i data-lucide="plus"></i> <span>Add Letter</span>
+                  </button>
+                  <button class="btn btn-secondary btn-sm" id="btn-add-space" title="Add space to start new word">
+                    <i data-lucide="space"></i> <span>Space</span>
+                  </button>
+                  <button class="btn btn-secondary btn-sm" id="btn-backspace" title="Delete last character">
+                    <i data-lucide="delete"></i> <span>Backspace</span>
+                  </button>
+                  <button class="btn btn-text text-danger btn-sm" id="btn-clear-sentence" title="Clear all words">
+                    <i data-lucide="trash-2"></i> <span>Clear</span>
+                  </button>
+                </div>
+
+                <!-- Prominent SEND SENTENCE Button -->
+                <button class="btn btn-send-sentence" id="btn-send-sentence">
+                  <i data-lucide="send"></i> <span>SEND SENTENCE TO MODEL</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Visual Sign Translation Display for Deaf User -->
+            <div class="reverse-sign-viewer">
+              <div class="section-title-sm">
+                <i data-lucide="eye"></i> Partner's Words in ASL (Visual Display for Deaf User)
+              </div>
+              <div class="sign-cards-scroll" id="incoming-sign-cards">
+                <div class="empty-cards-placeholder">
+                  Hearing partner's spoken response will appear here translated into ASL Gloss and visual cards.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT: LISTENER CHANNEL (HEARING PARTNER & AI UNDERSTANDING LAYER) -->
+          <div class="studio-card listener-card">
+            <div class="card-header">
+              <div class="header-left">
+                <span class="channel-badge listener-badge">
+                  <i data-lucide="volume-2"></i> Listener Channel (Hearing Partner)
+                </span>
+                <span class="sub-label">Captions, Voice TTS & AI Dialogue Layer</span>
+              </div>
+              <div class="tts-toggle-group">
+                <label class="toggle-switch">
+                  <input type="checkbox" id="auto-tts-toggle" checked />
+                  <span class="slider"></span>
+                </label>
+                <span class="toggle-label">Auto Voice TTS</span>
+              </div>
+            </div>
+
+            <!-- Live Subtitle Display Banner -->
+            <div class="captions-hero-banner">
+              <div class="captions-header">
+                <span class="captions-tag"><i data-lucide="subtitles"></i> Real-Time Live Captions</span>
+                <button class="audio-replay-btn" id="btn-replay-tts" title="Replay Spoken Audio">
+                  <i data-lucide="volume-2"></i> Listen
+                </button>
+              </div>
+              <div class="captions-body" id="live-captions-text">
+                "Waiting for signed sentence from partner..."
+              </div>
+              <div class="captions-gloss-sub" id="live-captions-gloss">
+                GLOSS: —
+              </div>
+            </div>
+
+            <!-- Language Understanding Inspector Drawer -->
+            <div class="understanding-inspector">
+              <div class="inspector-header">
+                <span class="inspector-title">
+                  <i data-lucide="brain"></i> Language Understanding Diagnostic
+                </span>
+                <span class="badge badge-reliable" id="status-tier-badge">Reliable (≥0.75)</span>
+              </div>
+
+              <div class="inspector-grid">
+                <div class="metric-card">
+                  <span class="metric-label">Structured Sentences Transmitted</span>
+                  <code class="metric-code" id="raw-cv-display">—</code>
+                </div>
+
+                <div class="metric-card">
+                  <span class="metric-label">Reconstructed Natural English</span>
+                  <div class="metric-value text-accent" id="reconstructed-meaning-display">—</div>
+                </div>
+
+                <div class="metric-card">
+                  <span class="metric-label">Confidence Metrics</span>
+                  <div class="metric-value" id="confidence-metric-display">
+                    Avg: <span>0.00</span> | Min: <span>0.00</span>
+                  </div>
+                </div>
+
+                <div class="metric-card">
+                  <span class="metric-label">Classifier Silent Corrections</span>
+                  <div class="metric-value text-muted" id="corrections-applied-display">None</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Conversation History Feed -->
+            <div class="conversation-feed-container">
+              <div class="feed-header">
+                <span class="section-title-sm"><i data-lucide="history"></i> Live Dialogue Transcript</span>
+                <button class="btn-text" id="btn-clear-chat"><i data-lucide="trash"></i> Clear</button>
+              </div>
+              <div class="conversation-feed" id="chat-feed">
+                <div class="dialogue-item system-notice">
+                  <i data-lucide="info"></i> Sign letters to compose your sentence, then click "SEND SENTENCE TO MODEL" to get AI reply.
+                </div>
+              </div>
+            </div>
+
+            <!-- Hearing Partner Input Bar (Microphone STT + Typed Message) -->
+            <div class="partner-input-area">
+              <div class="input-row">
+                <button class="btn btn-mic" id="btn-mic-stt" title="Speak to Partner (Speech-to-Text)">
+                  <i data-lucide="mic"></i>
+                </button>
+                <input 
+                  type="text" 
+                  id="hearing-text-input" 
+                  class="hearing-input-field" 
+                  placeholder="Hearing partner: Speak or type a message back..." 
+                />
+                <button class="btn btn-primary" id="btn-send-hearing-msg">
+                  <i data-lucide="send"></i> <span>Send to Signer</span>
+                </button>
+              </div>
+              <div class="mic-status-label" id="mic-status-label">Click microphone to dictate English speech</div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: PROMPT LAB & TEST INPUTS -->
+      <section class="tab-pane" id="prompt-lab-tab">
+        <div class="lab-container">
+          <div class="lab-header">
+            <h2><i data-lucide="flask-conical"></i> Sign Language Understanding Layer — Prompt Lab</h2>
+            <p>Directly test the language understanding engine with raw glosses, fingerspelled sequences, classifier visual confusions, and confidence edge cases.</p>
+          </div>
+
+          <div class="lab-grid">
+            <!-- Preset Scenarios from Prompt -->
+            <div class="lab-card">
+              <h3><i data-lucide="sparkles"></i> Worked Examples & Test Presets</h3>
+              <p class="card-desc">Click any preset to simulate the exact structured text received from upstream Computer Vision recognizers:</p>
+              
+              <div class="preset-buttons-grid">
+                <button class="preset-btn" data-input="TOMORROW WEATHER HOW (0.85)">
+                  <div class="preset-tag gloss-tag">Gloss Sequence</div>
+                  <div class="preset-code">TOMORROW WEATHER HOW (0.85)</div>
+                  <div class="preset-desc">Topic-first ASL grammar reconstruction</div>
+                </button>
+
+                <button class="preset-btn" data-input="[FS] R(0.9)-E(0.88)-S(0.55)-T(0.91)-A(0.93)-U(0.87)-R(0.9)-A(0.92)-N(0.6)-T(0.94) NEAR WHERE (0.8)">
+                  <div class="preset-tag mixed-tag">Mixed [FS] + Gloss + Low S/N</div>
+                  <div class="preset-code">[FS] R-E-S-T-A-U-R-A-N-T NEAR WHERE</div>
+                  <div class="preset-desc">Silent error correction on visual confusion pairs (S/N)</div>
+                </button>
+
+                <button class="preset-btn" data-input="HELP (0.3) (0.2)">
+                  <div class="preset-tag low-tag">Low Confidence (&lt;0.4)</div>
+                  <div class="preset-code">HELP (0.3) (0.2)</div>
+                  <div class="preset-desc">Polite repeat request triggered ("didn't catch that clearly")</div>
+                </button>
+
+                <button class="preset-btn" data-input="[FS] J(0.88)-O(0.95)-H(0.61)-N(0.93)">
+                  <div class="preset-tag fs-tag">Fingerspelling [FS]</div>
+                  <div class="preset-code">[FS] J(0.88)-O(0.95)-H(0.61)-N(0.93)</div>
+                  <div class="preset-desc">Letter-by-letter proper noun assembly</div>
+                </button>
+
+                <button class="preset-btn" data-input="NAME YOU WHAT (0.92)">
+                  <div class="preset-tag gloss-tag">Gloss WH-Movement</div>
+                  <div class="preset-code">NAME YOU WHAT (0.92)</div>
+                  <div class="preset-desc">Translates to natural "What is your name?"</div>
+                </button>
+
+                <button class="preset-btn" data-input="[FS] C-O-F-F-E-E WANT (0.88)">
+                  <div class="preset-tag mixed-tag">Fingerspell + Gloss</div>
+                  <div class="preset-code">[FS] C-O-F-F-E-E WANT (0.88)</div>
+                  <div class="preset-desc">Drink request interpretation</div>
+                </button>
+
+                <button class="preset-btn" data-input="STORE YOU GO (0.88)">
+                  <div class="preset-tag gloss-tag">Topic-Comment Question</div>
+                  <div class="preset-code">STORE YOU GO (0.88)</div>
+                  <div class="preset-desc">Reconstructs "Are you going to the store?"</div>
+                </button>
+
+                <button class="preset-btn" data-input="HOSPITAL (0.6) (0.55)">
+                  <div class="preset-tag clarify-tag">Medium Conf (0.4–0.75)</div>
+                  <div class="preset-code">HOSPITAL (0.6) (0.55)</div>
+                  <div class="preset-desc">Clarification question offering both readings</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Custom Input & Execution Console -->
+            <div class="lab-card">
+              <h3><i data-lucide="terminal"></i> Interactive Prompt Execution Console</h3>
+              <div class="console-form">
+                <label class="form-label" for="lab-custom-input">Structured Upstream CV Input String:</label>
+                <textarea 
+                  id="lab-custom-input" 
+                  class="code-textarea" 
+                  rows="3" 
+                  placeholder="e.g. TOMORROW WEATHER HOW (0.85) or [FS] J(0.9)-O(0.9)-H(0.7)-N(0.9)"
+                >TOMORROW WEATHER HOW (0.85)</textarea>
+
+                <div class="console-actions">
+                  <button class="btn btn-primary" id="btn-run-lab-test">
+                    <i data-lucide="play"></i> Execute Language Engine
+                  </button>
+                  <button class="btn btn-secondary" id="btn-clear-lab">
+                    <i data-lucide="rotate-ccw"></i> Reset
+                  </button>
+                </div>
+              </div>
+
+              <!-- Lab Output Visualizer -->
+              <div class="lab-output-box" id="lab-output-container">
+                <div class="output-row">
+                  <span class="out-label">Engine Status:</span>
+                  <span class="badge badge-reliable" id="lab-status-badge">Ready</span>
+                </div>
+                <div class="output-row">
+                  <span class="out-label">Reconstructed English:</span>
+                  <span class="out-text highlight" id="lab-reconstructed-out">—</span>
+                </div>
+                <div class="output-row">
+                  <span class="out-label">Assistant Conversational Reply:</span>
+                  <span class="out-text" id="lab-reply-out">—</span>
+                </div>
+                <div class="output-row">
+                  <span class="out-label">Downstream ASL Gloss:</span>
+                  <code class="metric-code" id="lab-gloss-out">—</code>
+                </div>
+                <div class="output-row">
+                  <span class="out-label">Corrections / Disambiguation:</span>
+                  <span class="out-text text-muted" id="lab-corrections-out">None</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: ASL ALPHABET & DATASET EXPLORER -->
+      <section class="tab-pane" id="dataset-tab">
+        <div class="dataset-container">
+          <div class="dataset-header">
+            <div>
+              <h2><i data-lucide="layout-grid"></i> ASL Alphabet & Dataset Inspector</h2>
+              <p>Explore character handshapes from your local <code>dataset/character dataset</code> and test live recognition.</p>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="btn-reload-dataset">
+              <i data-lucide="refresh-cw"></i> Refresh Dataset
+            </button>
+          </div>
+
+          <div class="dataset-grid" id="dataset-grid-view">
+            <div class="loading-spinner">Loading dataset samples...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: FEEDBACK LOGS -->
+      <section class="tab-pane" id="feedback-tab">
+        <div class="dataset-container">
+          <div class="dataset-header">
+            <div>
+              <h2><i data-lucide="clipboard-list"></i> Low-Confidence & Uncertainty Feedback Log</h2>
+              <p>Turns requiring clarification, repetition, or silent correction are logged here (<code>logs/low_confidence_feedback.jsonl</code>) to guide dataset retraining.</p>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-secondary btn-sm" id="btn-reload-feedback">
+                <i data-lucide="refresh-cw"></i> Refresh Logs
+              </button>
+              <button class="btn btn-text text-danger btn-sm" id="btn-clear-feedback">
+                <i data-lucide="trash-2"></i> Clear Logs
+              </button>
+            </div>
+          </div>
+
+          <div class="feedback-table-container">
+            <table class="feedback-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Raw Upstream String</th>
+                  <th>Status</th>
+                  <th>Avg / Min Conf</th>
+                  <th>Reconstructed Meaning</th>
+                  <th>Reason / Corrections</th>
+                </tr>
+              </thead>
+              <tbody id="feedback-tbody">
+                <tr><td colspan="6" style="text-align:center; color: var(--text-dim);">No logged turns yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Global Audio Player (Hidden) -->
+    <audio id="global-tts-player" style="display: none;"></audio>
+  </div>
+
+  <script src="/static/app.js"></script>
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>
